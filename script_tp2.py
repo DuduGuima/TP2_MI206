@@ -1,5 +1,5 @@
 import numpy as np
-from skimage.morphology import local_minima,local_maxima,erosion, dilation, binary_erosion, opening, closing, white_tophat, reconstruction, black_tophat, skeletonize, convex_hull_image, thin,area_opening, binary_closing,binary_opening
+from skimage.morphology import local_minima,local_maxima,binary_dilation,erosion, dilation, binary_erosion, opening, closing, white_tophat, reconstruction, black_tophat, skeletonize, convex_hull_image, thin,area_opening, binary_closing,binary_opening
 from skimage.morphology import square, diamond, octagon, rectangle, star, disk
 from skimage.filters.rank import entropy, enhance_contrast_percentile,mean,gradient_percentile,gradient
 from skimage.filters import apply_hysteresis_threshold,laplace,threshold_otsu
@@ -16,29 +16,14 @@ from sklearn.cluster import KMeans
 
 
 def distance_approach(img,img_mask):
-    im_result = np.empty(np.shape(img))
-    im_result=img
-    im_result = gradient(im_result,disk(2))
-    im_result = ndi.gaussian_filter(im_result,3)
-    #im_result = white_tophat(im_result,disk(3))
-    #im_result = feature.canny(im_result,sigma=0.1)
-    #img_out = img_out <15
-    #entropy(img,footprint=disk(4),out=im_result)
-    # img_out=opening(im_result,footprint=disk(1),out=im_result)
-    # img_out=closing(im_result,footprint=disk(1),out=im_result)
-    # for i in range(2,4):
-    #     print('size of disk used', i)
-    #     opening(im_result,footprint=disk(i),out=im_result)
-    #     closing(im_result,footprint=disk(i),out=im_result)
-    # img_out = dilation(im_result,footprint=disk(1)) - erosion(im_result,footprint=disk(1))
-    # seuil = threshold_otsu(img_out)
-    # img_out = img_out < seuil
-    # img_out = img_mask * (img_out < 20) 
-    # img_out = binary_opening(img_out, footprint=disk(1))
-    #img_out = binary_erosion(img_out , footprint=disk(1))
-    # #img_out = ndi.distance_transform_edt(img_out)
-    return im_result
-
+    
+    img_out= ndi.gaussian_filter(img,3)
+    seed = np.copy(img_out)
+    seed[1:-1,1:-1] = img_out.max()
+    mask=img_out
+    img_rec = reconstruction(seed,mask,method='erosion')
+    img_out = (img*img_mask - img_rec) < -4
+    return img_out
 def seg_ASF(img,img_mask):#90% de acc ta aqui
     img_use = img*img_mask
     img_out = ndi.gaussian_filter(img_use,sigma=2.0) #smoothing, taking out some of the
