@@ -12,11 +12,8 @@ import math
 from skimage import data, filters
 from matplotlib import pyplot as plt
 
-from sklearn.cluster import KMeans
-
 
 def distance_approach(img,img_mask):
-    
     img_out= ndi.gaussian_filter(img,3)
     seed = np.copy(img_out)
     seed[1:-1,1:-1] = img_out.max()
@@ -24,6 +21,7 @@ def distance_approach(img,img_mask):
     img_rec = reconstruction(seed,mask,method='erosion')
     img_out = (img*img_mask - img_rec) < -4
     return img_out
+
 def seg_ASF(img,img_mask):#90% de acc ta aqui
     img_use = img*img_mask
     img_out = ndi.gaussian_filter(img_use,sigma=2.0) #smoothing, taking out some of the
@@ -31,9 +29,17 @@ def seg_ASF(img,img_mask):#90% de acc ta aqui
     img_out = black_tophat(img_out,disk(2))#blood vessels are always black, so we get them
     img_out = mean(img_out,disk(3))#erase small bright spots in the background
     img_out = opening(img_out, disk(2))#again, to erase bright spots and smooth out image
-    return img_out
+    return img_out 
 
-
+def article_bottomtop(img,img_mask):# ~70% acc and 60% recal
+    img_use = img*img_mask
+    img_filtered = ndi.gaussian_filter(img_use,sigma=1.5) 
+    img_enhanced = 255 * ((img_filtered - img_filtered.max())/(img_filtered.max()-img_filtered.min()))
+    img_top = white_tophat(img_enhanced,disk(2))
+    img_bottom = black_tophat(img_enhanced,disk(2))
+    img_result = img_bottom - img_top
+    img_result = opening(img_result, disk(1))
+    return (img_result >2) 
 
 def my_segmentation(img, img_mask, seuil):
     img_out = (img_mask & (img < seuil))
